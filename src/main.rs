@@ -1,5 +1,6 @@
-
 //`?` only works if your function returns a `Result`
+
+mod app;
 use serde::Deserialize;
     #[derive(Deserialize, Debug)]
 struct Story{
@@ -53,3 +54,4 @@ async fn main()->Result<(),Box<dyn std::error::Error>>{
     }
     Ok(())
 }
+
