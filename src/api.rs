@@ -48,6 +48,7 @@ pub fn time_ago(unix_timestamp: i32) -> String {
 
 //Why a struct instead of free functions? Because reqwest::Client manages a connection pool internally — you want to create it once and reuse it, not make a new one per request
 //If something is expensive to create and safe to reuse — create it once, wrap it in a struct, pass the struct around
+#[derive(Debug, Clone)]
 pub struct HnClient{             //learned::wrap external resources in a struct, expose behavior through methods.
     client: reqwest::Client       // the internal connection pool lives here  as the struct owns the client
 }
