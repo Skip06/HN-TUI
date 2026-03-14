@@ -5,6 +5,7 @@ use crate::api::HnClient;
 use crate::api::{Comment, Story};
 use crate::ui::render;
 use std::sync::Arc;
+use crate::api::time_ago;
 
 use crossterm::{
     event::{self, Event, KeyCode},
@@ -90,7 +91,18 @@ impl App {
         }
     }
 
-    pub fn run(app: &App) -> Result<(), Error> {
+    pub async fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        
+        let top_ids = self.client.fetch_top_stories().await?; // its a async funtion
+       
+    
+        for id in &top_ids[..20] {
+            // we are borrowing then iterating
+            let story = self.client.fetch_story(*id).await?; // as id is currently &i64
+            self.stories.push(story);
+            
+        }
+        
         enable_raw_mode()?;
         execute!(stdout(), EnterAlternateScreen)?;
 
@@ -103,7 +115,7 @@ impl App {
             // terminal.draw takes a closure (an anonymous function).
             // It passes a 'frame' into that function so we can draw on it.
             // We wrap render in a closure so we can also pass app into it.
-            terminal.draw(|frame| render(frame, app))?;
+            terminal.draw(|frame| render(frame, self))?;
 
             // event::read() blocks until the user does something (key press, mouse, resize etc.)
             if let Event::Key(key) = event::read()? {
