@@ -6,6 +6,7 @@ use crate::api::{Comment, Story};
 use crate::ui::render;
 use std::sync::Arc;
 use crate::api::time_ago;
+use open;
 
 use crossterm::{
     event::{self, Event, KeyCode},
@@ -63,7 +64,7 @@ pub struct App {
     pub status: String, //for errors or msg loading
     pub screen: Screen, // which screen i am on
     pub feed: Feed,
-    pub comments: Vec<FlatComment>,
+    pub comments: Vec<Comment>,
     pub selected_comment: usize,
     pub selected_story: usize,
     pub story_offset: usize, // these are needed for scrolling
@@ -137,7 +138,28 @@ impl App {
                         }                
                     }
                     KeyCode::Enter => {
+                        let kid_ids = self.stories[self.selected_story].kids.clone().unwrap(); // clone() cause ownership violets
+                        
+                        //will clear the app.comment
+                        self.comments.clear();
+                        for id in kid_ids.iter().take(10){ // { with &kid_ids[..10] the main thread panicked cause it had fewer commnets than 10 }
+                            let comment = self.client.fetch_comment(*id).await; 
+                            self.comments.push(comment.unwrap());                      
+                        }             
+                        
+                                    
+                        
                         self.screen = Screen::Comments;
+                    }
+                    KeyCode::Esc => {
+                        self.screen = Screen::Story;
+                    }
+                    KeyCode::Char('o') => {
+                        if let Some(story) = self.stories.get(self.selected_story) {
+                            if let Some(url) = &story.url {
+                                let _ = open::that(url); // open the url in default browser
+                            }
+                        }
                     }
                     _ => {} // handles keycode for the rest
                 }

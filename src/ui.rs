@@ -7,7 +7,8 @@ use ratatui::{Frame,
             style::{Stylize, Color, Modifier, Style},
             text::{Line, Span}
 };
-use crate::api::time_ago;
+use crate::api::{time_ago, Comment};
+use crate::api::HnClient;
 use crate::app::{App, Screen};
 
 pub fn render(frame: &mut Frame, app: &mut App){  // this is what gets callwed every frame
@@ -78,5 +79,22 @@ fn draw_stories(frame: &mut Frame, app: &mut App){
 
 fn draw_comments(frame: &mut Frame, app: &mut App){
     
-    println!("Comment Section");
+    //HnClient::fetch_comment(app, kids_id);  {NEVER FETCCH INSIDE A RENDER THING AS RENDER GETS CALLED SAY 60 TIMES PER SEC SO WILL THE FETCH HTTP CALL}
+    let items: Vec<ListItem> = app.comments
+           .iter()
+           .map(|comment| {
+               let author = comment.by.as_deref().unwrap();
+               let time = time_ago(comment.time.unwrap());
+               let text = comment.text.as_deref().unwrap();
+               
+               let line1 = Line::from(format!("  {} · {}", author, time));
+               let line2 = Line::from(format!("  {}", text));
+               
+               ListItem::new(vec![line1, line2])
+           })
+           .collect();
+       
+       let list = List::new(items);
+       frame.render_widget(list, frame.area());
 }
+

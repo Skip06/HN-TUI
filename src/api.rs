@@ -6,8 +6,8 @@ pub struct Comment {
     pub id: u64,
     pub by: Option<String>,
     pub text: Option<String>,
-    pub kids: Option<Vec<u64>>,
-    pub time: Option<u64>,
+    pub kids: Option<Vec<i32>>,
+    pub time: Option<i32>,
     pub deleted: Option<bool>,
     pub dead: Option<bool>,
 }
@@ -73,7 +73,12 @@ impl HnClient{
        let story:Story = self.client.get(format!("https://hacker-news.firebaseio.com/v0/item/{}.json", id)).send().await?.json().await?;
        Ok(story)
    }
-      
+   
+//now will fetch the comments useing kids field of selected_stories
+   pub async fn fetch_comment(&self, id: i32) -> Result<Comment, Box< dyn std::error::Error>>{
+       let comment: Comment = self.client.get(format!("https://hacker-news.firebaseio.com/v0/item/{}.json", id)).send().await?.json().await?;
+       Ok(comment)
+   }
     
 }
 
