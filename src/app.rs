@@ -21,7 +21,7 @@ pub enum Screen {
     //these vals will be compared and passed along FNs so will impl some derive traits
     Story,
     Comments,
-    Help,
+    
 }
 
 //so there will be some feeds like they have on the website
@@ -123,7 +123,23 @@ impl App {
                     KeyCode::Char('q') => {
                         break Ok(());
                     }
-                    _ => {}
+                    KeyCode::Down => {
+                        let max = self.stories.len().saturating_sub(1);
+                        if self.selected_story < max{
+                            self.selected_story += 1;
+                            if self.selected_story > self.story_offset + self.page_size { self.story_offset += 1} // the scrolling thing look up the defination of offset
+                        }
+                    }
+                    KeyCode::Up => {
+                        if self.selected_story > 0 {
+                            self.selected_story -= 1;
+                            if self.selected_story < self.story_offset { self.story_offset = self.story_offset.saturating_sub(1); }
+                        }                
+                    }
+                    KeyCode::Enter => {
+                        self.screen = Screen::Comments;
+                    }
+                    _ => {} // handles keycode for the rest
                 }
             }
         };
