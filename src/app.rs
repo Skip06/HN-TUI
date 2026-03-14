@@ -1,29 +1,40 @@
 // so app will have 3 screen i: Story, ii: comments for a story, iii: help_popup
 //Designing for the render loop — thinking about "what does my UI need to read?"
 
-use crate::api::{Story, Comment};
 use crate::api::HnClient;
+use crate::api::{Comment, Story};
+use crate::ui::render;
 use std::sync::Arc;
 
+use crossterm::{
+    event::{self, Event, KeyCode},
+    execute,
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
+};
+use ratatui::Terminal;
+use ratatui::prelude::CrosstermBackend;
+use std::io::{Error, stdout};
+
 #[derive(Debug, Clone, PartialEq)]
-pub enum Screen{      //these vals will be compared and passed along FNs so will impl some derive traits
+pub enum Screen {
+    //these vals will be compared and passed along FNs so will impl some derive traits
     Story,
     Comments,
-    Help
+    Help,
 }
 
 //so there will be some feeds like they have on the website
 #[derive(Debug, Clone, PartialEq)]
-pub enum Feed{
+pub enum Feed {
     Ask,
     New,
     Show,
     Top,
-    Best
+    Best,
 }
 
-impl Feed{
-    pub fn label(&self) -> &str{
+impl Feed {
+    pub fn label(&self) -> &str {
         match self {
             Feed::Top => "Top",
             Feed::New => "New",
@@ -34,44 +45,41 @@ impl Feed{
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct FlatComment {
+    comment: Comment,
+    depth: usize,
+}
+
 //Every field in App answers one question:
 //"If I close the app and reopen it mid-session, what do I need to restore exactly where the user was?"
 // App is single owner of everything ur application needs
 #[derive(Debug, Clone)]
-pub struct App{
-    pub client: Arc<HnClient>, //shared ownership as this app runs forever say by main loop but fetching happens in background async task  
-    pub stories: Vec<Story>, 
-    pub loading: bool,       // to show a spinner or smt 
-    pub status: String,     //for errors or msg loading
-    pub screen: Screen,    // which screen i am on
+pub struct App {
+    pub client: Arc<HnClient>, //shared ownership as this app runs forever say by main loop but fetching happens in background async task
+    pub stories: Vec<Story>,
+    pub loading: bool,  // to show a spinner or smt
+    pub status: String, //for errors or msg loading
+    pub screen: Screen, // which screen i am on
     pub feed: Feed,
     pub comments: Vec<FlatComment>,
     pub selected_comment: usize,
     pub selected_story: usize,
-    pub story_offset: usize, // these are needed for srolling . refer pic proj 
+    pub story_offset: usize, // these are needed for scrolling
     pub comment_offset: usize,
     pub page_size: usize,
 }
 
-#[derive(Debug, Clone)]
-pub struct FlatComment{
-    comment: Comment,
-    depth: usize
+//now gonna put initialized vals for these so constructor
 
-}
-
-
-
-//now gonna put initiazed vals for these so constructor
-
-impl App{
-    pub fn new() -> Self{
-        Self{
-           client: Arc::new(HnClient::new()),
-            stories:vec![],
-            loading:false,
-            status:String::from("Loading"),
-            screen:Screen::Story,
+impl App {
+    pub fn new() -> Self {
+        Self {
+            client: Arc::new(HnClient::new()),
+            stories: vec![],
+            loading: false,
+            status: String::from("Loading"),
+            screen: Screen::Story,
             feed: Feed::Top,
             comments: vec![],
             selected_comment: 0,
@@ -80,5 +88,38 @@ impl App{
             comment_offset: 0,
             page_size: 30,
         }
+    }
+
+    pub fn run(app: &App) -> Result<(), Error> {
+        enable_raw_mode()?;
+        execute!(stdout(), EnterAlternateScreen)?;
+
+        //creating terminal with crossterm Backend
+        let backend = CrosstermBackend::new(stdout()); // stdout and stderr are the writer o/p stream
+        let mut terminal = Terminal::new(backend)?;
+
+        // event loop runs forever until manually broken
+        let result = loop {
+            // terminal.draw takes a closure (an anonymous function).
+            // It passes a 'frame' into that function so we can draw on it.
+            // We wrap render in a closure so we can also pass app into it.
+            terminal.draw(|frame| render(frame, app))?;
+
+            // event::read() blocks until the user does something (key press, mouse, resize etc.)
+            if let Event::Key(key) = event::read()? {
+                match key.code {
+                    KeyCode::Char('q') => {
+                        break Ok(());
+                    }
+                    _ => {}
+                }
+            }
+        };
+
+        // always clean up terminal before returning, even on error
+        disable_raw_mode()?;
+        execute!(stdout(), LeaveAlternateScreen)?;
+
+        result
     }
 }
