@@ -97,7 +97,7 @@ impl App {
         let top_ids = self.client.fetch_top_stories().await?; // its a async funtion
        
     
-        for id in &top_ids[..20] {
+        for id in &top_ids[..25] {
             // we are borrowing then iterating
             let story = self.client.fetch_story(*id).await?; // as id is currently &i64
             self.stories.push(story);
@@ -143,8 +143,8 @@ impl App {
                         //will clear the app.comment
                         self.comments.clear();
                         for id in kid_ids.iter().take(10){ // { with &kid_ids[..10] the main thread panicked cause it had fewer commnets than 10 }
-                            let comment = self.client.fetch_comment(*id).await; 
-                            self.comments.push(comment.unwrap());                      
+                            let comment = self.client.fetch_comment(*id).await;
+                            self.comments.push(comment.unwrap());                //POPULATING THE ARRAY      
                         }             
                         
                                     
