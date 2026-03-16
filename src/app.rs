@@ -96,8 +96,11 @@ impl App {
         
         let top_ids = self.client.fetch_top_stories().await?; // its a async funtion
        
-    
-        for id in &top_ids[..25] {
+        // current fetch is sequential — fetching story 1, waiting, fetching story 2, 30 sequential HTTP requests is slow.
+        //The fix is concurrent fetching — fire all requests at the same time and wait for all of them together. This is what futures::join_all does.
+        
+        
+        for id in &top_ids[..25] {  // slice so borrowing
             // we are borrowing then iterating
             let story = self.client.fetch_story(*id).await?; // as id is currently &i64
             self.stories.push(story);
