@@ -69,7 +69,7 @@ impl HnClient{
        Ok(ids)
    }
    
-   pub async fn fetch_story(&self, id: i64) -> Result<Story, Box<dyn std::error::Error>>{
+   pub async fn fetch_story(&self, id: i32) -> Result<Story, Box<dyn std::error::Error>>{
        let story:Story = self.client.get(format!("https://hacker-news.firebaseio.com/v0/item/{}.json", id)).send().await?.json().await?;
        Ok(story)
    }

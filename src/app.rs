@@ -2,11 +2,12 @@
 //Designing for the render loop — thinking about "what does my UI need to read?"
 
 use crate::api::HnClient;
+use crate::api::time_ago;
 use crate::api::{Comment, Story};
 use crate::ui::render;
-use std::sync::Arc;
-use crate::api::time_ago;
+use futures::future::join_all;
 use open;
+use std::sync::Arc;
 
 use crossterm::{
     event::{self, Event, KeyCode},
@@ -22,7 +23,6 @@ pub enum Screen {
     //these vals will be compared and passed along FNs so will impl some derive traits
     Story,
     Comments,
-    
 }
 
 //so there will be some feeds like they have on the website
@@ -93,20 +93,29 @@ impl App {
     }
 
     pub async fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        
         let top_ids = self.client.fetch_top_stories().await?; // its a async funtion
-       
+
         // current fetch is sequential — fetching story 1, waiting, fetching story 2, 30 sequential HTTP requests is slow.
         //The fix is concurrent fetching — fire all requests at the same time and wait for all of them together. This is what futures::join_all does.
-        
-        
-        for id in &top_ids[..25] {  // slice so borrowing
-            // we are borrowing then iterating
-            let story = self.client.fetch_story(*id).await?; // as id is currently &i64
-            self.stories.push(story);
-            
-        }
-        
+
+        // for id in &top_ids[..25] {  // slice so borrowing
+        //     // we are borrowing then iterating
+        //     let story = self.client.fetch_story(*id).await?; // as id is currently &i64
+        //     self.stories.push(story);
+
+        // }
+
+        let futures: Vec<_> = top_ids
+            .iter()
+            .take(30)
+            .map(|&id| self.client.fetch_story(id.try_into().unwrap())) // try_into() performs the conversion to req type and returns a result.
+            .collect();
+
+        let results: Vec<Result<Story, Box<dyn std::error::Error>>> = join_all(futures).await;   //Example result:Ok(story1),Ok(story2),Err(network_error), Ok(story4)]
+
+        self.stories = results.into_iter().filter_map(|r| r.ok()).collect(); // r.ok() => Result to Option => Ok(story1); → Some(story1)Err(error) → None
+        // filter_map removes NOne//
+
         enable_raw_mode()?;
         execute!(stdout(), EnterAlternateScreen)?;
 
@@ -129,29 +138,48 @@ impl App {
                     }
                     KeyCode::Down => {
                         let max = self.stories.len().saturating_sub(1);
-                        if self.selected_story < max{
+                        if self.selected_story < max {
                             self.selected_story += 1;
-                            if self.selected_story > self.story_offset + self.page_size { self.story_offset += 1} // the scrolling thing look up the defination of offset
+                            if self.selected_story > self.story_offset + self.page_size {
+                                self.story_offset += 1
+                            } // the scrolling thing look up the defination of offset
                         }
                     }
                     KeyCode::Up => {
                         if self.selected_story > 0 {
                             self.selected_story -= 1;
-                            if self.selected_story < self.story_offset { self.story_offset = self.story_offset.saturating_sub(1); }
-                        }                
+                            if self.selected_story < self.story_offset {
+                                self.story_offset = self.story_offset.saturating_sub(1);
+                            }
+                        }
                     }
                     KeyCode::Enter => {
                         let kid_ids = self.stories[self.selected_story].kids.clone().unwrap(); // clone() cause ownership violets
-                        
+
                         //will clear the app.comment
                         self.comments.clear();
-                        for id in kid_ids.iter().take(10){ // { with &kid_ids[..10] the main thread panicked cause it had fewer commnets than 10 }
-                            let comment = self.client.fetch_comment(*id).await;
-                            self.comments.push(comment.unwrap());                //POPULATING THE ARRAY      
-                        }             
                         
-                                    
+                        // for id in kid_ids.iter().take(10) {
+                        //     // { with &kid_ids[..10] the main thread panicked cause it had fewer commnets than 10 }
+                        //     let comment = self.client.fetch_comment(*id).await;
+                        //     self.comments.push(comment.unwrap()); //POPULATING THE ARRAY
+                        // }
                         
+                        
+                                    //   doin the same thing for comments //
+                        
+                        let futures: Vec<_> = kid_ids
+                            .iter()
+                            .take(10)
+                            .map(|&id| self.client.fetch_comment(id))
+                            .collect();
+                
+                        let results: Vec<Result<Comment, Box<dyn std::error::Error>>> = join_all(futures).await;   //Example result:Ok(story1),Ok(story2),Err(network_error), Ok(story4)]
+                
+                        self.comments = results.into_iter().filter_map(|r: Result<Comment, Box<dyn std::error::Error>>| r.ok()).collect::<Vec<Comment>>(); // r.ok() => Result to Option => Ok(story1); → Some(story1)Err(error) → None
+
+                        
+
                         self.screen = Screen::Comments;
                     }
                     KeyCode::Esc => {
