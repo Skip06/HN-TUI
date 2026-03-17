@@ -3,9 +3,6 @@
 mod app;
 mod api;
 mod ui;
-use api::HnClient;
-use api::Story;
-use api::time_ago;
 use app::App;
 
 #[tokio::main]

@@ -2,7 +2,6 @@
 //Designing for the render loop — thinking about "what does my UI need to read?"
 
 use crate::api::HnClient;
-use crate::api::time_ago;
 use crate::api::{Comment, Story};
 use crate::ui::render;
 use futures::future::join_all;
@@ -16,7 +15,7 @@ use crossterm::{
 };
 use ratatui::Terminal;
 use ratatui::prelude::CrosstermBackend;
-use std::io::{Error, stdout};
+use std::io:: stdout;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Screen {
@@ -32,7 +31,6 @@ pub enum Feed {
     New,
     Show,
     Top,
-    Best,
 }
 
 impl Feed {
@@ -40,18 +38,12 @@ impl Feed {
         match self {
             Feed::Top => "Top",
             Feed::New => "New",
-            Feed::Best => "Best",
             Feed::Ask => "Ask",
             Feed::Show => "Show",
         }
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct FlatComment {
-    comment: Comment,
-    depth: usize,
-}
 
 //Every field in App answers one question:
 //"If I close the app and reopen it mid-session, what do I need to restore exactly where the user was?"
@@ -60,8 +52,6 @@ pub struct FlatComment {
 pub struct App {
     pub client: Arc<HnClient>, //shared ownership as this app runs forever say by main loop but fetching happens in background async task
     pub stories: Vec<Story>,
-    pub loading: bool,  // to show a spinner or smt
-    pub status: String, //for errors or msg loading
     pub screen: Screen, // which screen i am on
     pub feed: Feed,
     pub comments: Vec<Comment>,
@@ -79,8 +69,6 @@ impl App {
         Self {
             client: Arc::new(HnClient::new()),
             stories: vec![],
-            loading: false,
-            status: String::from("Loading"),
             screen: Screen::Story,
             feed: Feed::Top,
             comments: vec![],
@@ -159,18 +147,12 @@ impl App {
                         //will clear the app.comment
                         self.comments.clear();
 
-                        // for id in kid_ids.iter().take(10) {
-                        //     // { with &kid_ids[..10] the main thread panicked cause it had fewer commnets than 10 }
-                        //     let comment = self.client.fetch_comment(*id).await;
-                        //     self.comments.push(comment.unwrap()); //POPULATING THE ARRAY
-                        // }
-
                         //   doin the same thing for comments //
 
                         let futures: Vec<_> = kid_ids
                             .iter()
                             .take(10)
-                            .map(|&id| self.client.fetch_comment(id))
+                            .map(|&id| self.client.fetch_comment(id))    //patern match => id is the val and not a ref
                             .collect();
 
                         let results: Vec<Result<Comment, Box<dyn std::error::Error>>> =
