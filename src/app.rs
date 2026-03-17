@@ -111,7 +111,7 @@ impl App {
             .map(|&id| self.client.fetch_story(id.try_into().unwrap())) // try_into() performs the conversion to req type and returns a result.
             .collect();
 
-        let results: Vec<Result<Story, Box<dyn std::error::Error>>> = join_all(futures).await;   //Example result:Ok(story1),Ok(story2),Err(network_error), Ok(story4)]
+        let results: Vec<Result<Story, Box<dyn std::error::Error>>> = join_all(futures).await; //Example result:Ok(story1),Ok(story2),Err(network_error), Ok(story4)]
 
         self.stories = results.into_iter().filter_map(|r| r.ok()).collect(); // r.ok() => Result to Option => Ok(story1); → Some(story1)Err(error) → None
         // filter_map removes NOne//
@@ -140,7 +140,7 @@ impl App {
                         let max = self.stories.len().saturating_sub(1);
                         if self.selected_story < max {
                             self.selected_story += 1;
-                            if self.selected_story > self.story_offset + self.page_size {
+                            if self.selected_story >= self.story_offset + self.page_size {
                                 self.story_offset += 1
                             } // the scrolling thing look up the defination of offset
                         }
@@ -158,27 +158,28 @@ impl App {
 
                         //will clear the app.comment
                         self.comments.clear();
-                        
+
                         // for id in kid_ids.iter().take(10) {
                         //     // { with &kid_ids[..10] the main thread panicked cause it had fewer commnets than 10 }
                         //     let comment = self.client.fetch_comment(*id).await;
                         //     self.comments.push(comment.unwrap()); //POPULATING THE ARRAY
                         // }
-                        
-                        
-                                    //   doin the same thing for comments //
-                        
+
+                        //   doin the same thing for comments //
+
                         let futures: Vec<_> = kid_ids
                             .iter()
                             .take(10)
                             .map(|&id| self.client.fetch_comment(id))
                             .collect();
-                
-                        let results: Vec<Result<Comment, Box<dyn std::error::Error>>> = join_all(futures).await;   //Example result:Ok(story1),Ok(story2),Err(network_error), Ok(story4)]
-                
-                        self.comments = results.into_iter().filter_map(|r: Result<Comment, Box<dyn std::error::Error>>| r.ok()).collect::<Vec<Comment>>(); // r.ok() => Result to Option => Ok(story1); → Some(story1)Err(error) → None
 
-                        
+                        let results: Vec<Result<Comment, Box<dyn std::error::Error>>> =
+                            join_all(futures).await; //Example result:Ok(story1),Ok(story2),Err(network_error), Ok(story4)]
+
+                        self.comments = results
+                            .into_iter()
+                            .filter_map(|r: Result<Comment, Box<dyn std::error::Error>>| r.ok())
+                            .collect::<Vec<Comment>>(); // r.ok() => Result to Option => Ok(story1); → Some(story1)Err(error) → None
 
                         self.screen = Screen::Comments;
                     }

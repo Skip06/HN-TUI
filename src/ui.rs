@@ -30,21 +30,26 @@ fn draw_stories(frame: &mut Frame, app: &mut App) {
         .constraints(vec![
             Constraint::Length(3),
             Constraint::Min(0),
-            Constraint::Length(3)
+            Constraint::Length(3),
         ])
         .split(frame.area());
+
+    // Update page_size to match the actual visible area
+    // Each story takes 2 lines (title + meta), border takes 2 lines (top + bottom)
+    let visible_stories = (chunks[1].height.saturating_sub(2) / 2) as usize;
+    app.page_size = visible_stories;   //page size was hardcoded to 30 so then it checks in app.rs the selected_story >= story_offset + page_size — since 26 > 30+0, the offset never incremented.
 
     // List is widget that holds all ListItems . [span->line->ListItem->List]
     let items: Vec<ListItem> = app
         .stories
         .iter()
         .skip(app.story_offset) //skips n elems from start
-        .take(chunks[1].height as usize) // shows n elems
+        .take(visible_stories) // shows n elems
         .enumerate() // gives u (index, story)
         .map(|(i, story)| {
-            let is_selected = i == app.selected_story; // is_selected contains bool val
+            let is_selected = (i + app.story_offset) == app.selected_story; // is_selected contains bool val
             let title_line = Line::from(vec![
-                Span::raw(format!("  {}. ", i + 1)),
+                Span::raw(format!("  {}. ", i + 1 + app.story_offset)),
                 Span::style(
                     story.title.clone().into(), //.into() => converts to req type
                     if is_selected {
@@ -81,12 +86,10 @@ fn draw_stories(frame: &mut Frame, app: &mut App) {
         chunks[0],
     );
     //frame.render_widget(Block::new().fg(Color::Blue).borders(Borders::ALL), chunks[1]);
-    
-    let status = Paragraph::new(
-        format!(" {}/{}", app.selected_story + 1, app.stories.len())
-    )
-    .style(Style::default().fg(Color::Cyan));
-    
+
+    let status = Paragraph::new(format!(" {}/{}", app.selected_story + 1, app.stories.len()))
+        .style(Style::default().fg(Color::Cyan));
+
     frame.render_widget(
         status.block(Block::new().fg(Color::Green).borders(Borders::ALL)),
         chunks[2],
@@ -111,8 +114,13 @@ fn draw_comments(frame: &mut Frame, app: &mut App) {
         .collect();
 
     let list = List::new(items);
-    frame.render_widget(list.block(Block::default()
-        .title(" Top Comments ")
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::Rgb(255, 102, 0)))), frame.area());
+    frame.render_widget(
+        list.block(
+            Block::default()
+                .title(" Top Comments ")
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(Color::Rgb(255, 102, 0))),
+        ),
+        frame.area(),
+    );
 }
