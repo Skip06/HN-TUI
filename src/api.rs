@@ -83,5 +83,27 @@ impl HnClient{
 }
 
 
-
+pub fn strip_html(s: &str) -> String {
+    let mut out = String::new();
+    let mut in_tag = false;
+    
+    for ch in s.chars() {
+        match ch {
+            '<' => in_tag = true,
+            '>' => in_tag = false,
+            _ if !in_tag => out.push(ch),
+            _ => {}
+        }
+    }
+    
+    // fix common HTML entities
+    out
+        .replace("&#x27;", "'")
+        .replace("&quot;", "\"")
+        .replace("&amp;", "&")
+        .replace("&gt;", ">")
+        .replace("&lt;", "<")
+        .replace("<p>", "\n\n")
+        .replace("&#x2F;", "/")
+}
 

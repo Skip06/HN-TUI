@@ -1,6 +1,6 @@
 //im using this video https://youtu.be/M-BTpC_BEN0?si=May0iUd2bJT3xn1a
 // and docs and gemini to write ratatui (mostly generated)
-
+use crate::api::strip_html;
 use crate::api::HnClient;
 use crate::api::{Comment, time_ago};
 use crate::app::{App, Feed, Screen};
@@ -104,7 +104,8 @@ fn draw_comments(frame: &mut Frame, app: &mut App) {
         .map(|comment| {
             let author = comment.by.as_deref().unwrap();
             let time = time_ago(comment.time.unwrap());
-            let text = comment.text.as_deref().unwrap();
+            let raw = comment.text.as_deref().unwrap_or("[deleted]");
+            let text = strip_html(raw);
 
             let line1 = Line::from(format!("  {} · {}", author, time));
             let line2 = Line::from(format!("  {}", text));
