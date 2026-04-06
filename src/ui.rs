@@ -1,7 +1,7 @@
 //im using this video https://youtu.be/M-BTpC_BEN0?si=May0iUd2bJT3xn1a
 // and docs and gemini to write ratatui (mostly generated)
-use crate::api::strip_html;
 use crate::api::HnClient;
+use crate::api::strip_html;
 use crate::api::{Comment, time_ago};
 use crate::app::{App, Feed, Screen};
 use ratatui::{
@@ -37,7 +37,7 @@ fn draw_stories(frame: &mut Frame, app: &mut App) {
     // Update page_size to match the actual visible area
     // Each story takes 2 lines (title + meta), border takes 2 lines (top + bottom)
     let visible_stories = (chunks[1].height.saturating_sub(2) / 2) as usize;
-    app.page_size = visible_stories;   //page size was hardcoded to 30 so then it checks in app.rs the selected_story >= story_offset + page_size — since 26 > 30+0, the offset never incremented.
+    app.page_size = visible_stories; //page size was hardcoded to 30 so then it checks in app.rs the selected_story >= story_offset + page_size — since 26 > 30+0, the offset never incremented.
 
     // List is widget that holds all ListItems . [span->line->ListItem->List]
     let items: Vec<ListItem> = app

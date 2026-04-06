@@ -15,7 +15,7 @@ use crossterm::{
 };
 use ratatui::Terminal;
 use ratatui::prelude::CrosstermBackend;
-use std::io:: stdout;
+use std::io::stdout;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Screen {
@@ -43,7 +43,6 @@ impl Feed {
         }
     }
 }
-
 
 //Every field in App answers one question:
 //"If I close the app and reopen it mid-session, what do I need to restore exactly where the user was?"
@@ -152,7 +151,7 @@ impl App {
                         let futures: Vec<_> = kid_ids
                             .iter()
                             .take(10)
-                            .map(|&id| self.client.fetch_comment(id))    //patern match => id is the val and not a ref
+                            .map(|&id| self.client.fetch_comment(id)) //patern match => id is the val and not a ref
                             .collect();
 
                         let results: Vec<Result<Comment, Box<dyn std::error::Error>>> =
