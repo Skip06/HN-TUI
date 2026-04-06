@@ -2,6 +2,10 @@
 name = "hn_tui"
 version = "0.1.0"
 edition = "2024"
+description = "A terminal UI for Hacker News"
+license = "MIT"
+readme = "README.md"
+keywords = ["hacker-news", "tui", "terminal"]
 
 [dependencies]
 tokio = { version = "1", features = ["full"] }
