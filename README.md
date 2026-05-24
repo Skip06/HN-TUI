@@ -41,6 +41,11 @@ git clone https://github.com/Skip06/HN-TUI.git
 cd HN-TUI
 cargo run
 ```
+OR
+```bash
+cargo install hn_tui
+hn_tui
+```
 
 ## License
 
