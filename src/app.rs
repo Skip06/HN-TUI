@@ -58,6 +58,8 @@ pub struct App {
     pub selected_story: usize,
     pub story_offset: usize, // these are needed for scrolling
     pub comment_offset: usize,
+    pub comment_viewport: usize,
+    pub comment_line_count: usize,
     pub page_size: usize,
 }
 
@@ -75,6 +77,8 @@ impl App {
             selected_story: 0,
             story_offset: 0,
             comment_offset: 0,
+            comment_viewport: 0,
+            comment_line_count: 0,
             page_size: 30,
         }
     }
@@ -123,44 +127,59 @@ impl App {
                     KeyCode::Char('q') => {
                         break Ok(());
                     }
-                    KeyCode::Down => {
-                        let max = self.stories.len().saturating_sub(1);
-                        if self.selected_story < max {
-                            self.selected_story += 1;
-                            if self.selected_story >= self.story_offset + self.page_size {
-                                self.story_offset += 1
-                            } // the scrolling thing look up the defination of offset
-                        }
-                    }
-                    KeyCode::Up => {
-                        if self.selected_story > 0 {
-                            self.selected_story -= 1;
-                            if self.selected_story < self.story_offset {
-                                self.story_offset = self.story_offset.saturating_sub(1);
+                    KeyCode::Down => match self.screen {
+                        Screen::Story => {
+                            let max = self.stories.len().saturating_sub(1);
+                            if self.selected_story < max {
+                                self.selected_story += 1;
+                                if self.selected_story >= self.story_offset + self.page_size {
+                                    self.story_offset += 1
+                                }
                             }
                         }
-                    }
-                    KeyCode::Enter => {
-                        let kid_ids = self.stories[self.selected_story].kids.clone().unwrap(); // clone() cause ownership violets
+                        Screen::Comments => {
+                            let max = self
+                                .comment_line_count
+                                .saturating_sub(self.comment_viewport);
+                            if self.comment_offset < max {
+                                self.comment_offset += 1;
+                            }
+                        }
+                    },
+                    KeyCode::Up => match self.screen {
+                        Screen::Story => {
+                            if self.selected_story > 0 {
+                                self.selected_story -= 1;
+                                if self.selected_story < self.story_offset {
+                                    self.story_offset = self.story_offset.saturating_sub(1);
+                                }
+                            }
+                        }
+                        Screen::Comments => {
+                            self.comment_offset = self.comment_offset.saturating_sub(1);
+                        }
+                    },
+                    KeyCode::Enter if self.screen == Screen::Story => {
+                        let Some(story) = self.stories.get(self.selected_story) else {
+                            continue;
+                        };
+                        let kid_ids = story.kids.clone().unwrap_or_default();
 
-                        //will clear the app.comment
                         self.comments.clear();
+                        self.comment_offset = 0;
 
-                        //   doin the same thing for comments //
+                        if !kid_ids.is_empty() {
+                            let futures: Vec<_> = kid_ids
+                                .iter()
+                                .take(10)
+                                .map(|&id| self.client.fetch_comment(id))
+                                .collect();
 
-                        let futures: Vec<_> = kid_ids
-                            .iter()
-                            .take(10)
-                            .map(|&id| self.client.fetch_comment(id)) //patern match => id is the val and not a ref
-                            .collect();
+                            let results: Vec<Result<Comment, Box<dyn std::error::Error>>> =
+                                join_all(futures).await;
 
-                        let results: Vec<Result<Comment, Box<dyn std::error::Error>>> =
-                            join_all(futures).await; //Example result:Ok(story1),Ok(story2),Err(network_error), Ok(story4)]
-
-                        self.comments = results
-                            .into_iter()
-                            .filter_map(|r: Result<Comment, Box<dyn std::error::Error>>| r.ok())
-                            .collect::<Vec<Comment>>(); // r.ok() => Result to Option => Ok(story1); → Some(story1)Err(error) → None
+                            self.comments = results.into_iter().filter_map(|r| r.ok()).collect();
+                        }
 
                         self.screen = Screen::Comments;
                     }

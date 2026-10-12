@@ -108,10 +108,18 @@ impl HnClient {
 }
 
 pub fn strip_html(s: &str) -> String {
+    // Turn breaks into newlines before tags are stripped, or <p> never survives.
+    let normalized = s
+        .replace("<p>", "\n\n")
+        .replace("</p>", "\n")
+        .replace("<br>", "\n")
+        .replace("<br/>", "\n")
+        .replace("<br />", "\n");
+
     let mut out = String::new();
     let mut in_tag = false;
 
-    for ch in s.chars() {
+    for ch in normalized.chars() {
         match ch {
             '<' => in_tag = true,
             '>' => in_tag = false,
@@ -120,12 +128,11 @@ pub fn strip_html(s: &str) -> String {
         }
     }
 
-    // fix common HTML entities
     out.replace("&#x27;", "'")
+        .replace("&#39;", "'")
         .replace("&quot;", "\"")
         .replace("&amp;", "&")
         .replace("&gt;", ">")
         .replace("&lt;", "<")
-        .replace("<p>", "\n\n")
         .replace("&#x2F;", "/")
 }
