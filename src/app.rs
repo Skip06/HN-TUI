@@ -27,9 +27,6 @@ pub enum Screen {
 //so there will be some feeds like they have on the website
 #[derive(Debug, Clone, PartialEq)]
 pub enum Feed {
-    Ask,
-    New,
-    Show,
     Top,
 }
 
@@ -37,9 +34,6 @@ impl Feed {
     pub fn label(&self) -> &str {
         match self {
             Feed::Top => "Top",
-            Feed::New => "New",
-            Feed::Ask => "Ask",
-            Feed::Show => "Show",
         }
     }
 }
@@ -54,7 +48,6 @@ pub struct App {
     pub screen: Screen, // which screen i am on
     pub feed: Feed,
     pub comments: Vec<Comment>,
-    pub selected_comment: usize,
     pub selected_story: usize,
     pub story_offset: usize, // these are needed for scrolling
     pub comment_offset: usize,
@@ -73,7 +66,6 @@ impl App {
             screen: Screen::Story,
             feed: Feed::Top,
             comments: vec![],
-            selected_comment: 0,
             selected_story: 0,
             story_offset: 0,
             comment_offset: 0,

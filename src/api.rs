@@ -2,10 +2,8 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Comment {
-    pub id: u64,
     pub by: Option<String>,
     pub text: Option<String>,
-    pub kids: Option<Vec<i32>>,
     pub time: Option<i32>,
     pub deleted: Option<bool>,
     pub dead: Option<bool>,
@@ -15,13 +13,10 @@ pub struct Comment {
 pub struct Story {
     pub by: Option<String>, // this part might be empty so to handle NULL-> Option
     pub descendants: Option<i32>,
-    pub id: i32,
     pub kids: Option<Vec<i32>>,
     pub score: Option<i32>,
-    pub text: Option<String>,
     pub time: Option<i32>,
     pub title: String,
-    pub r#type: Option<String>,
     pub url: Option<String>,
 }
 
